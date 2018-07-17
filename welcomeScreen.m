@@ -19,5 +19,3 @@ Screen('Flip', w);
 GetClicks;
 
 end
-
-
