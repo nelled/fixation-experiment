@@ -10,7 +10,7 @@ try
     screenNumber = max(Screen('Screens'));
     
     % Create fullscreen window with 0 - 0.1 color range
-    [w, wRect] = PsychImaging('OpenWindow', screenNumber, backgroundcolor);
+    [w, wRect] = PsychImaging('OpenWindow', screenNumber, backgroundcolor);                                   
     
     % Get subject No
     subjectNo = getCurrentSubjectNo;
@@ -28,7 +28,7 @@ try
     result = sprintf('{"subjectNo" : "%d", "trials"  : [', subjectNo);
     
     % Loop over trials
-    for trial = 1:size(designMatrix, 1)
+    for trial = 1:5%size(designMatrix, 1)
         
         % Assign vals
         filter = designMatrix(trial,3);
@@ -37,23 +37,33 @@ try
         
         % Load image from image number
         image = loadImage(imageNo);
+        
         % Run trial
-        [fixDurations, mouseX, mouseY, fixX, fixY] = currentTrial(image, delay, filter, w, wRect, screenNumber, backgroundcolor);
+        [mouseX, mouseY, fixX, fixY] = currentTrial(image, delay, filter, w, wRect, screenNumber, backgroundcolor);
+        
         % Make json string for trial
-        trialJson = trialToJson(trial, delay, filter, imageNo, fixDurations, mouseX, mouseY, fixX, fixY);
+        trialJson = trialToJson(trial, delay, filter, imageNo, mouseX, mouseY, fixX, fixY);
+        
         % Append trial to result json
         result = [result, [trialJson ',']];
+        
+        % Plot results if you want
+        %plot(mouseX,mouseY,fixX,fixY, 'rs')
     end
+    
     % Truncate last comma and append closing brackets
-    result = [result(1:end-1), ']}']
+    result = [result(1:end-1), ']}'];
+    
+    % Write to disc
     writeResult(result,subjectNo);
+    % Close
     sca;
+    ShowCursor;
+    Priority(0);
+% Gotta catch 'em all
 catch
     sca;
     ShowCursor;
     Priority(0);
     psychrethrow(psychlasterror);
 end
-
-
-%plot(b,c,d,e, 'rs')

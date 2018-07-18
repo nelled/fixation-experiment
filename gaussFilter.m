@@ -1,4 +1,6 @@
-function [filtered_image] = gaussFilter(img)
+function filteredImage = gaussFilter(img)
+% Simple Gauss filter, N and sigma are chosen arbitrarily
+
 N = 10;
 sigma = 10;
 
@@ -6,5 +8,5 @@ sigma = 10;
 f = exp(-x.^2/(2 * sigma^2)-y.^2/(2 * sigma^2));
 f = f ./ sum(f(:));
 
-filtered_image = conv2(img, f, 'same');
+filteredImage = conv2(img, f, 'same');
 end

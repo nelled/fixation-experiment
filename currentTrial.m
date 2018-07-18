@@ -1,4 +1,4 @@
-function [fix_durations, mouse_x, mouse_y, fix_x, fix_y] = currentTrial(img, delay, filter, w, wRect, screenNumber, backgroundcolor)
+function [mouse_x, mouse_y, fix_x, fix_y] = currentTrial(img, delay, filter, w, wRect, screenNumber, backgroundcolor)
 try
     % Setup default aperture size.
     ms = 200;
@@ -24,8 +24,8 @@ try
     buttons = 0;
     
     % Make this program important
-    %priorityLevel=MaxPriority(w);
-    %Priority(priorityLevel);
+    priorityLevel=MaxPriority(w);
+    Priority(priorityLevel);
     
     % Wait until all keys on keyboard are released:
     KbReleaseWait;
@@ -34,18 +34,12 @@ try
     mxold = 0;
     myold = 0;
     
-    % Init fixation duration
-    fix_duration = 0;
-    
-    % We create a two layers Luminance + Alpha matrix for use as transparency
-    % (or mixing weights) mask: Layer 1 (Luminance) is filled with luminance
-    % value 1.0 aka white - the ones() function does this nicely for us, by
-    % first filling both layers with 1.0:
+    % Create luminance and alpha matrix as a mask to blend the filtered and
+    % the original image into each other
     [x, y] = meshgrid(-ms:ms, -ms:ms);
     maskblob = ones(2*ms+1, 2*ms+1, 2);
     
-    % Layer 2 (Transparency aka Alpha) is now filled/overwritten with a gaussian
-    % transparency/mixing mask.
+    % Fill alpha layer with gaussian
     xsd = ms / 2.2;
     ysd = ms / 2.2;
     maskblob(:, :, 2) = 1 - exp(-((x / xsd).^2)-((y / ysd).^2));
@@ -56,7 +50,9 @@ try
     % Show image
     imageTexture = Screen('MakeTexture', w, img);
     Screen('DrawTexture', w, imageTexture);
-    Screen('Flip', w);
+    
+    % Get timestamp of first show
+    t0 = Screen('Flip', w);
     
     % Init stillTime. stillTime is used to measure the time without
     % movement > distance threshold
@@ -70,11 +66,12 @@ try
     fix_x = [];
     fix_y = [];
     
-    % Init switch. If we already have an image blurred at the fixation
+    % Init flag. If we already have an image blurred at the fixation
     % point, we only want to redraw it if there is a movement > distance
     % threshold. Otherwise, we want to stay the blur in place to record
-    % seccadic movements
-    isBlur = 0;
+    % seccadic movements.
+    isFiltered = 0;
+
     while 1
         % Query current mouse cursor position
         [mx, my, buttons] = GetMouse;
@@ -86,64 +83,71 @@ try
         % Calculate euclidean distance between old and new position
         dist = eDist(mxold, myold, mx, my);
         
-        % We only want "big" movements to be considert a change of fixatoin
+        % We only want "big" movements to be considered a change of fixation
         % point. Smaller movements will be recorded as seccadic
         if dist > 15
             stillTime = 0;
-            isBlur = 0;
+            % Check if already filtered
+            isFiltered = 0;
+            
+            % Clear everything
+            Screen('BlendFunction', w, GL_ONE, GL_ZERO, [1, 1, 1, 1]);
+            Screen('FillRect', w, backgroundcolor);
+            
+            % Draw
+            Screen('DrawTexture', w, nonfoveatex, [], ctRect);
+            
+            % Flip
+            t0Still = Screen('Flip', w);
         else
-            stillTime = stillTime + 0.001;
-            if stillTime >= delay & isBlur == 0
-                isBlur = 1;
+            % Check if we already exceeded delay
+            tStill = GetSecs() - t0Still;
+            if tStill >= delay && isFiltered == 0
+                
+                % Set flag
+                isFiltered = 1;
+                
+                % Append coordinates
                 fix_x(end+1) = mx;
                 fix_y(end+1) = my;
+                
+                % Define area to be filtered
                 myrect = [mx - ms, my - ms, mx + ms + 1, my + ms + 1];
+                
+                % Clip accordingly
                 dRect = ClipRect(myrect, ctRect);
                 sRect = OffsetRect(dRect, -dx, -dy);
                 
-                % Valid destination rectangle?
+                % Valid destination?
                 if ~IsEmptyRect(dRect)
-                    % Yes! Draw image for current frame:
-                    
-                    % Step 1: Draw the alpha-mask into the backbuffer. It
-                    % defines the aperture for foveation: The center of gaze
-                    % has zero alpha value. Alpha values increase with distance from
-                    % center of gaze according to a gaussian function and
-                    % approach 1.0 at the border of the aperture...
-                    % Actual use of masktex to define transitions/mix:
-                    
-                    % First clear framebuffer to backgroundcolor, not using
-                    % alpha blending (== GL_ONE, GL_ZERO), enable all channels
-                    % for writing [1 1 1 1], so everything gets cleared to good
-                    % starting values:
+                    % Draw alpha mask. Opacity is zero at the center of our
+                    % aperture. It increases according to the gaussian
+                    % function until it reaches 1 (full opacity)
+
+                    % Clear everything to background color, not using
+                    % blending [1, 1, 1, 1] means RGBA channels.
                     Screen('BlendFunction', w, GL_ONE, GL_ZERO, [1, 1, 1, 1]);
                     Screen('FillRect', w, backgroundcolor);
                     
-                    % Then keep alpha blending disabled and draw the mask
-                    % texture, but *only* into the alpha channel. Don't touch
-                    % the RGB color channels but use the channel mask
-                    % [R G B A] = [0 0 0 1] to only enable the alpha-channel
-                    % for drawing into it:
+                    % Still no blending, draw mask into alpha channel.
                     Screen('BlendFunction', w, GL_ONE, GL_ZERO, [0, 0, 0, 1]);
                     Screen('DrawTexture', w, masktex, [], myrect);
                     
-                    % Step 2: Draw peripheral image. It is only/increasingly drawn where
-                    % the alpha-value in the backbuffer is 1.0 or close, leaving
-                    % the foveated area (low or zero alpha values) alone:
-                    % This is done by weighting each color value of each pixel
-                    % with the corresponding alpha-value in the backbuffer
-                    % (GL_DST_ALPHA). Disable alpha channel writes via [1 1 1 0], so
-                    % alpha mask stays untouched and only RGB color channels are
-                    % affected:
+                    % Draw non filtered image. It is drawn according to the
+                    % alpha value (GL_DST_ALPHA constant). Alpha mask is
+                    % not modified because now we only write to RGB
+                    % [1,1,1,0]
                     Screen('BlendFunction', w, GL_DST_ALPHA, GL_ZERO, [1, 1, 1, 0]);
                     Screen('DrawTexture', w, nonfoveatex, [], ctRect);
-                    % Step 3: Draw foveated image, but only/increasingly where the
-                    % alpha-value in the backbuffer is zero or low: This is
-                    % done by weighting each color value with one minus the
-                    % corresponding alpha-value in the backbuffer
-                    % (GL_ONE_MINUS_DST_ALPHA).
+                    
+                    % Draw filtered image, but with inverted alpha value,
+                    % meaning that we draw where we did not draw before
+                    % (GL_ONE_MINUS_DST_ALPHA constant). Again only write
+                    % to RGB.
                     Screen('BlendFunction', w, GL_ONE_MINUS_DST_ALPHA, GL_ONE, [1, 1, 1, 0]);
                     Screen('DrawTexture', w, foveatex, sRect, dRect);
+                    
+                    % Display
                     Screen('Flip', w);
                 end
             end
@@ -156,16 +160,18 @@ try
         % don't overload the system in realtime-priority:
         WaitSecs('YieldSecs', 0.001);
         
-        % Abort keypress our mouse-click:
+        % Break if time elapsed from first display is >= 5.
+        if GetSecs() - t0 >= 5.0
+            break;
+        end
+        % Abort keypress or mouse-click or if longer than 5 seconds
         if KbCheck | find(buttons)
-            fix_durations = 0;
             break;
         end
     end
     
 catch
-    %this "catch" section executes in case of an error in the "try" section
-    %above.  Importantly, it closes the onscreen window if its open.
+    % Recover from exception
     sca;
     ShowCursor;
     Priority(0);

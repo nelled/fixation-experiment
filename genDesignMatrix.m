@@ -1,20 +1,20 @@
-% function generating a design matrix
-% c Daniel Nelle 2018
-
 function designMatrix = genDesignMatrix(subjectNo, imgList)
+% Generates a design matrix
+
 %initialize random number generator
 rng(100*subjectNo);
 
 %Factor filter
 F1LevA = 1;
 F1LevB = 2;
+F1LevC = 0;
 
 %Factor delay
-F2LevA = 0.03;
-F2LevB = 0.05;
-F2LevC = 0.07;
+F2LevA = 0.3;
+F2LevB = 0.5;
+F2LevC = 0.7;
 
-F1 = [F1LevA, F1LevB];
+F1 = [F1LevA, F1LevB, F1LevC];
 F2 = [F2LevA, F2LevB, F2LevC];
 
 NREP = length(imgList);
