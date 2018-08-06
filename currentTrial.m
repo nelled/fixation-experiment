@@ -152,7 +152,7 @@ try
                 end
             end
         end
-        % Keep track of last gaze position:
+        % Keep track of last eye position:
         mxold = mx;
         myold = my;
         
@@ -164,7 +164,7 @@ try
         if GetSecs() - t0 >= 5.0
             break;
         end
-        % Abort keypress or mouse-click or if longer than 5 seconds
+        % Abort keypress or mouse-click
         if KbCheck | find(buttons)
             break;
         end
@@ -176,7 +176,9 @@ catch
     ShowCursor;
     Priority(0);
     psychrethrow(psychlasterror);
-end %try..catch..
+
+%try..catch..
+end 
 
 % Close textures so they do not linger in memory
 Screen('Close', foveatex);

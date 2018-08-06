@@ -60,6 +60,7 @@ try
     sca;
     ShowCursor;
     Priority(0);
+
 % Gotta catch 'em all
 catch
     sca;
