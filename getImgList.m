@@ -1,4 +1,6 @@
 function picNameList = getImgList()
+% Function reads pictures in directory and returns a list of filenames
+
 currentDir = mfilename('fullpath');
 idx = strfind(currentDir, '/');
 folder = currentDir(1:idx(end));

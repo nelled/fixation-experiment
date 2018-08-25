@@ -1,4 +1,7 @@
 function jsonTrial = trialToJson(runNo, fix_durations, mouse_x, mouse_y, fix_x, fix_y)
+% Creates the json file given the data provided as arguments. The json file
+% is of the following structure
+
 % [{
 % 	'subjectNo' : '',
 % 	'trials'	:	

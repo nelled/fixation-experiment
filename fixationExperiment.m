@@ -28,6 +28,7 @@ try
     result = sprintf('{"subjectNo" : "%d", "trials"  : [', subjectNo);
     
     % Loop over trials
+    % Uncomment for use with design matrix
     for trial = 1:5%size(designMatrix, 1)
         
         % Assign vals

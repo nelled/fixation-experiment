@@ -34,7 +34,10 @@ for i = 1:length(F1)
     end
 end
 
+% Shuffle
 design = design(randperm(length(design)),:);
+
+% Create index
 design(:,1) = 1:length(design);
 
 designMatrix = design;

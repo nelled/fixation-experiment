@@ -1,4 +1,7 @@
 function subjectNo = getCurrentSubjectNo()
+% Function reads files in directory, extracts the number of the last
+% experiment and increments it
+
 currentDir = mfilename('fullpath');
 idx = strfind(currentDir, '/');
 folder = currentDir(1:idx(end));
