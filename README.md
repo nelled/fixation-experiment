@@ -8,4 +8,4 @@
 * Run *ptb3-matlab* as superuser to avoid bugs.
 
 ## Short description
-The experiment presents a series of pictures to the subject and tracks its eye movement. On fixation points, a Gaussian, Laplacian or no filter are applied to the area around the fixation point, until another fixation point is detected or 5 seconds have passed. Eye movements are recorded, as are fixation points. Short eye movements are considered as saccadic and do not change the fixation point - longer distances chane the fixation points.
+The experiment presents a series of pictures to the subject and tracks its eye movement. On fixation points, a Gaussian, Laplacian or no filter are applied to the area around the fixation point, until another fixation point is detected or 5 seconds have passed. Eye movements are recorded, as are fixation points. Short eye movements are considered as saccadic and do not change the fixation point - longer distances change the fixation points.
